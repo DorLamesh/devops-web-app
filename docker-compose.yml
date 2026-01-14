@@ -3,7 +3,10 @@ version: '3.8'
 services:
   pd:
     image: pingcap/pd:v6.5.0
-    command: [/bin/sh, -c, "pd-server --name=pd --client-urls=http://0.0.0.0:2379 --peer-urls=http://0.0.0.0:2380"]
+    command:
+      - --name=pd
+      - --client-urls=http://0.0.0.0:2379
+      - --peer-urls=http://0.0.0.0:2380
     ports:
       - 2379:2379
     volumes:
@@ -17,6 +20,10 @@ services:
       - pd
     volumes:
       - tikv-data:/var/lib/tikv
+    command:
+      - --addr=0.0.0.0:20160
+      - --advertise-addr=tikv:20160
+      - --pd-endpoints=pd:2379
 
   tidb:
     image: pingcap/tidb:v6.5.0

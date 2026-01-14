@@ -28,32 +28,44 @@
           return /\S+@\S+\.\S+/.test(email);
         }
 
-        function LoginApp(){
+        function AuthApp(){
+          const [mode, setMode] = useState('signup'); // show signup first
           const [username, setUsername] = useState('');
+          const [email, setEmail] = useState('');
           const [password, setPassword] = useState('');
+          const [showPassword, setShowPassword] = useState(false);
           const [errors, setErrors] = useState({});
           const [out, setOut] = useState('');
           const [loading, setLoading] = useState(false);
 
           function validate(){
             const errs = {};
-            if(!username || username.trim() === '') errs.username = 'Username or email is required';
-            else if(username.includes('@') && !validateEmail(username)) errs.username = 'Invalid email format';
-            if(!password || password.length < 6) errs.password = 'Password must be at least 6 characters';
+            if(!username || username.trim() === '') errs.username = 'Username is required';
+            if(mode === 'signup' && email && !validateEmail(email)) errs.email = 'Invalid email format';
+
+            // password rules: must be >=8, include letter and number
+            if(!password || password.length < 8) errs.password = 'Password must be at least 8 characters';
+            else {
+              if(!/[A-Za-z]/.test(password)) errs.password = 'Password must include at least one letter';
+              if(!/[0-9]/.test(password)) errs.password = 'Password must include at least one number';
+            }
+
             setErrors(errs);
             return Object.keys(errs).length === 0;
           }
 
-          async function onSubmit(eEvent){
-            eEvent.preventDefault();
+          async function submit(eEvent){
+            eEvent && eEvent.preventDefault();
             setOut('');
             if(!validate()) return;
             setLoading(true);
-            try{
-              const resp = await fetch('http://localhost:3001/login', {
+              try{
+              const url = mode === 'login' ? 'http://localhost:3001/login' : 'http://localhost:3001/signup';
+              const body = mode === 'login' ? { username, password } : { username, email, password };
+              const resp = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
+                body: JSON.stringify(body)
               });
               const data = await resp.json();
               setOut(JSON.stringify(data, null, 2));
@@ -67,7 +79,7 @@
 
           async function showProfile(){
             const token = localStorage.getItem('token');
-            if(!token){ setOut('No token stored. Login first.'); return; }
+            if(!token){ setOut('No token stored. Login or signup first.'); return; }
             try{
               const resp = await fetch('http://localhost:3001/profile', { headers: { 'x-auth-token': token } });
               const data = await resp.json();
@@ -76,18 +88,38 @@
           }
 
           return e('div', null,
-            e('h1', null, 'Login'),
-            e('form', { onSubmit },
-              e('label', null, 'Username or Email',
-                e('input', { value: username, onChange: (ev)=>setUsername(ev.target.value), placeholder: 'username or email' })
+            e('h1', null, mode === 'login' ? 'Login' : 'Sign up'),
+            // single toggle link to switch modes (avoids duplicate "Login" buttons)
+            e('div', { style: { marginBottom: '8px' } },
+              e('a', { href: '#', onClick: (ev)=>{ ev.preventDefault(); const next = mode === 'signup' ? 'login' : 'signup'; setMode(next); setUsername(''); setEmail(''); setPassword(''); setErrors({}); setOut(''); setShowPassword(false); }, style: { color: '#0366d6', cursor: 'pointer' } },
+                mode === 'signup' ? 'Already have an account? Login' : "Don't have an account? Sign up"
+              )
+            ),
+            e('form', { onSubmit: submit },
+              e('label', null, 'Username',
+                e('input', { value: username, onChange: (ev)=>setUsername(ev.target.value), placeholder: 'username' })
               ),
               errors.username ? e('div', { className: 'error' }, errors.username) : null,
+              mode === 'signup' ? e('label', null, 'Email (optional)',
+                e('input', { value: email, onChange: (ev)=>setEmail(ev.target.value), placeholder: 'email' })
+              ) : null,
+              errors.email ? e('div', { className: 'error' }, errors.email) : null,
               e('label', null, 'Password',
-                e('input', { type: 'password', value: password, onChange: (ev)=>setPassword(ev.target.value), placeholder: 'password' })
+                e('input', { type: showPassword ? 'text' : 'password', value: password, onChange: (ev)=>setPassword(ev.target.value), placeholder: 'password' })
               ),
+              // show-password toggle
+              e('label', { style: { marginTop: '6px', display: 'inline-block' } },
+                e('input', { type: 'checkbox', checked: showPassword, onChange: (ev)=>setShowPassword(ev.target.checked) }), ' Show password'
+              ),
+              // immediate feedback for 8-char requirement
+              (function(){
+                const pwLenOk = password.length >= 8;
+                return e('div', { style: { fontSize: '0.9em', color: pwLenOk ? 'green' : '#b00020', marginTop: '4px' } }, pwLenOk ? 'Password length OK (≥ 8 chars)' : 'Password must be at least 8 characters');
+              })(),
               errors.password ? e('div', { className: 'error' }, errors.password) : null,
+              null,
               e('div', null,
-                e('button', { type: 'submit', disabled: loading }, loading ? 'Logging in...' : 'Login'),
+                e('button', { type: 'submit', disabled: loading }, loading ? (mode==='login' ? 'Logging in...' : 'Signing up...') : (mode==='login' ? 'Login' : 'Sign up')),
                 e('button', { type: 'button', onClick: showProfile, style: { marginLeft: '8px' } }, 'Show Profile')
               )
             ),
@@ -97,7 +129,7 @@
         }
 
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(e(LoginApp));
+        root.render(e(AuthApp));
       })();
     </script>
   </body>

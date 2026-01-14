@@ -1,5 +1,5 @@
 const { Kafka } = require('kafkajs');
-const logger = require('./logger');
+const { jsonLogger } = require('./logger');
 
 const kafka = new Kafka({ brokers: [process.env.KAFKA_BROKER || 'localhost:9092'] });
 const consumer = kafka.consumer({ groupId: 'tidb-cdc-consumer' });
@@ -13,9 +13,9 @@ async function run(){
       try{
         const parsed = JSON.parse(value);
         // Log structured message as JSON string
-        logger.json({ timestamp: new Date().toISOString(), action: 'db_change', data: parsed });
+  jsonLogger.json({ timestamp: new Date().toISOString(), action: 'db_change', data: parsed });
       }catch(err){
-        logger.json({ timestamp: new Date().toISOString(), action: 'db_change', raw: value });
+  jsonLogger.json({ timestamp: new Date().toISOString(), action: 'db_change', raw: value });
       }
     }
   });

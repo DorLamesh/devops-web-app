@@ -21,7 +21,7 @@ docker compose up --build
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:3001
 
-3. Default user: `admin` / `password`
+3. Default user: `admin` / `password1`
 
 Notes:
 - The TiCDC service creates a changefeed to Kafka topic `tidb_cdc` automatically (see `docker-compose.yml`).
