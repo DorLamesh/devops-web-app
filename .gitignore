@@ -1,0 +1,63 @@
+# Node modules
+node_modules/
+**/node_modules/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+
+# Environment files
+.env
+.env.*
+.env.local
+.env.*.local
+
+# Build output
+dist/
+build/
+out/
+.tmp/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editors/IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Docker / Compose local overrides
+docker-compose.override.yml
+.env.docker
+
+# Misc caches
+.cache/
+.eslintcache
+.parcel-cache/
+.next/
+
+# Archive files
+*.tgz
+*.zip
+
+# Optional: ignore local editor swap files
+*~
+*.swp
+
+# Keep lockfiles and package manifests under version control (do not ignore package-lock.json / yarn.lock)

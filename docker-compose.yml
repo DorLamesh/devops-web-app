@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  pd:
+    image: pingcap/pd:v6.5.0
+    command: [/bin/sh, -c, "pd-server --name=pd --client-urls=http://0.0.0.0:2379 --peer-urls=http://0.0.0.0:2380"]
+    ports:
+      - 2379:2379
+    volumes:
+      - pd-data:/var/lib/pd
+
+  tikv:
+    image: pingcap/tikv:v6.5.0
+    environment:
+      - TIKV_ENABLE_GRPC_GATEWAY=0
+    depends_on:
+      - pd
+    volumes:
+      - tikv-data:/var/lib/tikv
+
+  tidb:
+    image: pingcap/tidb:v6.5.0
+    command: ["/bin/sh", "-c", "tidb-server --store=tikv --path=pd:2379"]
+    depends_on:
+      - pd
+      - tikv
+    ports:
+      - 4000:4000
+      - 10080:10080
+    volumes:
+      - tidb-data:/var/lib/tidb
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.4.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - 2181:2181
+
+  kafka:
+    image: confluentinc/cp-kafka:7.4.1
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    depends_on:
+      - zookeeper
+    ports:
+      - 9092:9092
+
+  ticdc:
+    image: pingcap/ticdc:v6.5.0
+    depends_on:
+      - pd
+      - tidb
+      - kafka
+    entrypoint: ["/bin/sh", "-c", "ticdc server --pd=http://pd:2379 & sleep 3; until curl -s http://pd:2379 >/dev/null; do sleep 1; done; ticdc cli changefeed create --pd=http://pd:2379 --sink-uri='kafka://kafka:9092?topic=tidb_cdc&partition-num=1' --changefeed-id=tidb-cdc-feed || true; sleep 3600"]
+
+  backend:
+    build:
+      context: ./backend
+    environment:
+      - DB_HOST=tidb
+      - DB_PORT=4000
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=appdb
+      - KAFKA_BROKER=kafka:9092
+    ports:
+      - 3001:3001
+    depends_on:
+      - tidb
+      - kafka
+
+  consumer:
+    build:
+      context: ./backend
+    command: ["node", "src/consumer.js"]
+    environment:
+      - KAFKA_BROKER=kafka:9092
+    depends_on:
+      - kafka
+
+  db-init:
+    build:
+      context: ./backend
+    command: ["node", "src/init-db.js"]
+    environment:
+      - DB_HOST=tidb
+      - DB_PORT=4000
+      - DB_USER=root
+      - DB_PASSWORD=
+      - DB_NAME=appdb
+    depends_on:
+      - tidb
+
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - 3000:3000
+    depends_on:
+      - backend
+
+volumes:
+  pd-data:
+  tikv-data:
+  tidb-data:
