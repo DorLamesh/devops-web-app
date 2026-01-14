@@ -2,6 +2,7 @@
   "name": "devops-web-app",
   "dockerComposeFile": ["../docker-compose.yml"],
   "service": "backend",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "shutdownAction": "stopCompose",
   "runServices": [
     "pd",
@@ -15,7 +16,6 @@
     "db-init",
     "frontend"
   ],
-  "postStartCommand": "docker compose up --build -d",
   "customizations": {
     "vscode": {
       "settings": {
