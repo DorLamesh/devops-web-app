@@ -42,7 +42,7 @@ async function init(){
     // Insert default user if not exists
     const defaultUser = 'admin';
     const defaultEmail = 'admin@example.com';
-    const defaultPass = 'password';
+  const defaultPass = process.env.DEFAULT_ADMIN_PASSWORD || 'password1';
     const [rows] = await pool.query('SELECT id FROM users WHERE username = ?', [defaultUser]);
     if(rows.length === 0){
       const hash = await bcrypt.hash(defaultPass, 10);

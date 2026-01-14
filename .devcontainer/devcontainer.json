@@ -1,0 +1,35 @@
+{
+  "name": "devops-web-app",
+  "dockerComposeFile": ["../docker-compose.yml"],
+  "service": "backend",
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "shutdownAction": "stopCompose",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "version": "latest"
+    }
+  },
+  "runServices": [
+    "pd",
+    "tikv",
+    "tidb",
+    "zookeeper",
+    "kafka",
+    "ticdc",
+    "backend",
+    "consumer",
+    "db-init",
+    "frontend"
+  ],
+  "customizations": {
+    "vscode": {
+      "settings": {
+        "terminal.integrated.shell.linux": "/bin/bash"
+      },
+      "extensions": [
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}
