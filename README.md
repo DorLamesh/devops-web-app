@@ -1,5 +1,6 @@
 # Full-stack TiDB demo
 
+
 This project is a minimal full-stack application demonstrating:
 
 - Node.js backend with authentication (tokens stored in TiDB)
